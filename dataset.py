@@ -38,7 +38,7 @@ class Dataset:
         self.t_max = args.max_seqlen
         self.trainidx = []
         self.testidx = []
-        self.classwiseidx = []
+        self.classwiseidx = []  # 每一个类别对应的视频索引
         self.currenttestidx = 0
         self.labels_multihot = [
             utils.strlist2multihot(labs, self.classlist)
@@ -74,7 +74,7 @@ class Dataset:
                         break
             self.classwiseidx.append(idx)
 
-    def load_data(self, n_similar=0, is_training=True, similar_size=2):
+    def load_data(self, n_similar=0, is_training=True, similar_size=2):   # n_similar表示取几类，similar_size表示每类取几个视频
         if is_training:
             labels = []
             idx = []
@@ -83,13 +83,13 @@ class Dataset:
             if n_similar != 0:
                 rand_classid = np.random.choice(
                     len(self.classwiseidx), size=n_similar
-                )
+                )  # 随机取n_similar个类别
                 for rid in rand_classid:
                     rand_sampleid = np.random.choice(
                         len(self.classwiseidx[rid]),
                         size=similar_size,
                         replace=False,
-                    )
+                    )  # 每个类别取similar_size个视频
 
                     for k in rand_sampleid:
                         idx.append(self.classwiseidx[rid][k])
