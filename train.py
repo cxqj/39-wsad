@@ -44,7 +44,7 @@ def mill_loss(element_logits, seq_len, labels, device, args):
     milloss = loss / element_logits.shape[0]  # 1.9133
     return milloss
 
-
+# 对attention后的特征归一化
 def get_unit_vector(x, dim=0):
     return x / torch.norm(x, 2, dim=dim, keepdim=True)
 
@@ -108,8 +108,15 @@ def metric_loss(
         )  # 0.0002
 
         D2 = batch_per_dis(Xh, Xl, weight[common_ind, :])  #(1,4,4)
+        """
+        1 - torch.eye(D2.shape[1]):
+            0 1 1 1
+            1 0 1 1
+            1 1 0 1
+            1 1 1 0
+        """
 
-        D2 = D2 * (1 - torch.eye(D2.shape[1])).unsqueeze(0)  # (1,4,4)
+        D2 = D2 * (1 - torch.eye(D2.shape[1])).unsqueeze(0)  # (1,4,4)  
         D2 = D2.view(D2.shape[0], -1)
 
         d2 = torch.sum(D2, -1) / (args.similar_size * (args.similar_size - 1))  # 0.0012
