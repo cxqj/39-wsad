@@ -171,7 +171,7 @@ class ANETdetection(object):
         return pred, c_s
 
 
-    def _import_prediction(self, predictions):
+    def _import_prediction(self, predictions):  # (212,T,20)
         pred = []
         for i, p in enumerate(predictions):
             if i in self.idx_to_take:
