@@ -72,18 +72,20 @@ def metric_loss(
     n_tmp = 0.0
 
     element_logits = F.hardtanh(element_logits, -args.clip, args.clip)
-    for i in range(0, args.num_similar * args.similar_size, args.similar_size):
+    
+    for i in range(0, args.num_similar * args.similar_size, args.similar_size):  # 索引类别
 
         lab = labels[i, :]
-        for k in range(i + 1, i + args.similar_size):
+        for k in range(i + 1, i + args.similar_size):  # 同一个类别
             lab = lab * labels[k, :]
 
-        common_ind = lab.nonzero().squeeze(-1)  # [10]
+        common_ind = lab.nonzero().squeeze(-1)  # [10]  # 动作类别
 
         Xh = torch.Tensor()   # (2048,4,1)
         Xl = torch.Tensor()   # (2048,4,1)
 
-        for k in range(i, i + args.similar_size):
+        # 同一类动作的高响应部分和低响应部分
+        for k in range(i, i + args.similar_size):  # 某一类的similar_size个样本
             elem = element_logits[k][: seq_len[k], common_ind]  # (249,1)
             atn = F.softmax(elem, dim=0)  # (249,1)
             n1 = torch.FloatTensor([np.maximum(seq_len[k] - 1, 1)]).to(device)  # [248,]
@@ -96,12 +98,18 @@ def metric_loss(
             Xh = torch.cat([Xh, xh], dim=1)
             Xl = torch.cat([Xl, xl], dim=1)
 
+        # 归一化
         Xh = get_unit_vector(Xh, dim=0)  # (2048,4,1)
         Xl = get_unit_vector(Xl, dim=0)  # (2048,4,1)
 
-        D1 = batch_per_dis(Xh, Xh, weight[common_ind, :])  # (1,4,4)
+        D1 = batch_per_dis(Xh, Xh, weight[common_ind, :])  # (1,4,4)   # 同一类别不同样本的高响应部分应该相似
 
-        D1 = torch.triu(D1, diagonal=1)
+        #返回一个张量, 包含输入矩阵 ( 2D 张量)的上三角部分, 其余部分被设为 0.
+        #参数 diagonal 控制对角线.
+        #diagonal = 0, 主对角线.
+        #diagonal > 0, 主对角线之上.
+        #diagonal < 0, 主对角线之下.
+        D1 = torch.triu(D1, diagonal=1)  # 之所以取上三角的结果是为了避免和自己运算和重复计算
         D1 = D1.view(D1.shape[0], -1)  # (1,16)
         d1 = torch.sum(D1, -1) / (
             args.similar_size * (args.similar_size - 1) / 2
@@ -109,7 +117,7 @@ def metric_loss(
 
         D2 = batch_per_dis(Xh, Xl, weight[common_ind, :])  #(1,4,4)
         """
-        1 - torch.eye(D2.shape[1]):
+        1 - torch.eye(D2.shape[1]):     返回对角线位置全为1, 其它位置全为0的二维 tensor.
             0 1 1 1
             1 0 1 1
             1 1 0 1
