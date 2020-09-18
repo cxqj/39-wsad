@@ -91,8 +91,9 @@ def metric_loss(
             n1 = torch.FloatTensor([np.maximum(seq_len[k] - 1, 1)]).to(device)  # [248,]
             atn_l = (1 - atn) / n1  # (249,1)
 
-            xh = torch.mm(torch.transpose(x[k][: seq_len[k]], 1, 0), atn)   # (249,2048)-->(2048,249)x(249,1)-->(2048,1)
-            xl = torch.mm(torch.transpose(x[k][: seq_len[k]], 1, 0), atn_l) # (249,2048)-->(2048,249)x(249,1)-->(2048,1)
+            
+            xh = torch.mm(torch.transpose(x[k][: seq_len[k]], 1, 0), atn)   # (249,2048)-->(2048,249)x(249,1)-->(2048,1)  # 高响应部分特征
+            xl = torch.mm(torch.transpose(x[k][: seq_len[k]], 1, 0), atn_l) # (249,2048)-->(2048,249)x(249,1)-->(2048,1)  # 低响应部分特征
             xh = xh.unsqueeze(1)  # (2048,1)-->(2048,1,1)
             xl = xl.unsqueeze(1)  # (2048,1)-->(2048,1,1)
             Xh = torch.cat([Xh, xh], dim=1)
